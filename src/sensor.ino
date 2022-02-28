@@ -13,7 +13,6 @@
 #define DHTYPE DHT11
 
 SYSTEM_THREAD(ENABLED);
-SYSTEM_MODE(AUTOMATIC);
 
 DHT dht1(DHTPIN, DHTYPE);
 DHT dhtSensors[] = {dht1};
@@ -82,7 +81,7 @@ void tempRead()
 	Serial.println(averageT);
 
 	averageH = sumH/DHTSIZE;
-	Serial.print("Promedio temperatura: ");
+	Serial.print("Promedio humedad: ");
 	Serial.println(averageH);
 
 	//Send averages to the cloud
