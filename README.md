@@ -1,4 +1,4 @@
-## Welcome to your project!
+## Hydroponic project
 
 Every new Particle project is composed of 3 important elements that you'll see have been created in your project directory for sensor.
 
