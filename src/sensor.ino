@@ -26,6 +26,8 @@ GA1A12S202 luxSensors[] = {lux1};
 float rawRange = 1024; // 3.3v
 float logRange = 5.0; // 3.3v = 10^5 lux
 
+Thread TR("tempReadThread", tempRead);
+Thread LR("lightReadThread", lightRead);
 
 // setup() runs once, when the device is first turned on.
 void setup() 
@@ -34,9 +36,6 @@ void setup()
 	Serial.println("Sensor reading test!");
 
 	dht1.begin();
-
-	new Thread("tempReadThread", tempRead);
-	new Thread("lightReadThread", lightRead);
 }
 
 // loop() runs over and over again, as quickly as it can execute.
@@ -88,6 +87,7 @@ void tempRead()
 
 	delay(5000);
 	tempRead();
+	//os_thread_delay_until(&lastThreadTime, 2000);
 }
 
 void lightRead()
