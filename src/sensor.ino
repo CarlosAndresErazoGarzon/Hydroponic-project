@@ -44,8 +44,8 @@ void setup()
 void loop() 
 {
 
-	tempRead();
-	lightRead();
+	//tempRead();
+	//lightRead();
   
 	delay(5000);
 }
@@ -86,6 +86,9 @@ void tempRead()
 	Serial.println(averageH);
 
 	//Send averages to the cloud
+
+	delay(5000);
+	tempRead();
 }
 
 void lightRead()
@@ -110,6 +113,9 @@ void lightRead()
 	averageL = sumL/LUXSIZE;
 	Serial.print("Promedio temperatura: ");
 	Serial.println(averageL);
+
+	delay(5000);
+	lightRead();
 }
 
 //Particle.publish("temperature", String(h)); // publish to cloud YA FUNCIONA!!!
