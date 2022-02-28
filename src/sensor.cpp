@@ -13,13 +13,20 @@
 
 #include "Adafruit_DHT.h"
 #include "GA1A12S202.h"
-
+#include "Ubidots.h"
 
 void setup();
 void loop();
 void tempRead();
 void lightRead();
 #line 12 "c:/Users/anes_/Documents/Hidroponicos/Hydroponic-project/src/sensor.ino"
+#ifndef UBIDOTS_TOKEN
+#define UBIDOTS_TOKEN ""  // Put here your Ubidots TOKEN
+#endif
+
+Ubidots ubidots(UBIDOTS_TOKEN, UBI_UDP);
+
+
 #define DHTPIN 8
 #define DHTYPE DHT11
 
@@ -33,9 +40,6 @@ GA1A12S202 lux1(A5);
 GA1A12S202 luxSensors[] = {lux1};
 #define LUXSIZE 1
 
-float rawRange = 1024; // 3.3v
-float logRange = 5.0; // 3.3v = 10^5 lux
-
 
 // setup() runs once, when the device is first turned on.
 void setup() {
@@ -43,16 +47,34 @@ void setup() {
 	Serial.println("Sensor reading test!");
 
 	dht1.begin();
+	ubidots.setDebug(true);
 }
 
 // loop() runs over and over again, as quickly as it can execute.
 void loop() {
 
+	bool bufferSent = false;
+
+	delay(9000);
+
 	tempRead();
 	lightRead();
-  
 
-	delay(5000);
+	delay(9000);
+
+	tempRead();
+	lightRead();
+
+
+	bufferSent = ubidots.send();  // Will send data to a device label that matches the device Id
+
+	if (bufferSent) {
+	// Do something if values were sent properly
+	Serial.println("Values sent by the device");
+	}
+
+	
+	System.sleep(900);
 
 }
 
@@ -87,10 +109,13 @@ void tempRead(){
 	Serial.println(averageT);
 
 	averageH = sumH/DHTSIZE;
-	Serial.print("Promedio temperatura: ");
+	Serial.print("Promedio humedad: ");
 	Serial.println(averageH);
 
-	//Send averages to the cloud
+
+	ubidots.add("hum1", averageH);
+	ubidots.add("temp1", averageT);
+
 }
 
 void lightRead(){
@@ -98,6 +123,7 @@ void lightRead(){
 	float l = 0;
 	float sumL = 0;
 	float averageL = 0;
+	bool bufferSent = false;
 
 	for (int i = 0 ; i < LUXSIZE ; i++){
 		l = luxSensors[i].getLux(true);
@@ -113,6 +139,8 @@ void lightRead(){
 	averageL = sumL/LUXSIZE;
 	Serial.print("Promedio temperatura: ");
 	Serial.println(averageL);
+
+	ubidots.add("Lux1", averageL);
 }
 
 

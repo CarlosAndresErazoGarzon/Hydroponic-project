@@ -1,2 +1,4 @@
 target/
 .vscode/
+argon_firmware_*
+src/sensor.cpp
