@@ -12,11 +12,13 @@
 #define DHTPIN 8
 #define DHTYPE DHT11
 
+SYSTEM_THREAD(ENABLED);
+SYSTEM_MODE(AUTOMATIC);
 
 DHT dht1(DHTPIN, DHTYPE);
 DHT dhtSensors[] = {dht1};
 #define DHTSIZE 1
-
+volatile int counter = 0;
 
 GA1A12S202 lux1(A5);
 GA1A12S202 luxSensors[] = {lux1};
@@ -27,25 +29,29 @@ float logRange = 5.0; // 3.3v = 10^5 lux
 
 
 // setup() runs once, when the device is first turned on.
-void setup() {
+void setup() 
+{
 	Serial.begin(9600); 
 	Serial.println("Sensor reading test!");
 
 	dht1.begin();
+
+	new Thread("tempReadThread", tempRead);
+	new Thread("lightReadThread", lightRead);
 }
 
 // loop() runs over and over again, as quickly as it can execute.
-void loop() {
+void loop() 
+{
 
 	tempRead();
 	lightRead();
   
-
 	delay(5000);
-
 }
 
-void tempRead(){
+void tempRead()
+{
 
 	float h = 0;
 	float t = 0;
@@ -55,8 +61,8 @@ void tempRead(){
 	float averageT = 0;
 
 
-	for (int i = 0 ; i < DHTSIZE ; i++){
-
+	for (int i = 0 ; i < DHTSIZE ; i++)
+	{
 		h = dhtSensors[i].getHumidity();
 		t = dhtSensors[i].getTempCelcius();
 
@@ -82,13 +88,15 @@ void tempRead(){
 	//Send averages to the cloud
 }
 
-void lightRead(){
+void lightRead()
+{
 
 	float l = 0;
 	float sumL = 0;
 	float averageL = 0;
 
-	for (int i = 0 ; i < LUXSIZE ; i++){
+	for (int i = 0 ; i < LUXSIZE ; i++)
+	{
 		l = luxSensors[i].getLux(true);
 
 		Serial.print("Sensor LUX: ");
@@ -103,7 +111,5 @@ void lightRead(){
 	Serial.print("Promedio temperatura: ");
 	Serial.println(averageL);
 }
-
-
 
 //Particle.publish("temperature", String(h)); // publish to cloud YA FUNCIONA!!!
