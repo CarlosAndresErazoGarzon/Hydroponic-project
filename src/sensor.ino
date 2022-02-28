@@ -1,52 +1,109 @@
 /*
- * Project sensor
+ * Project Hydroponic-project
  * Description:
  * Author:
- * Date:
+ * Date: 27/02/2022
  */
 
 #include "Adafruit_DHT.h"
+#include "GA1A12S202.h"
+
 
 #define DHTPIN 8
 #define DHTYPE DHT11
 
-DHT dht(DHTPIN, DHTYPE);
+
+DHT dht1(DHTPIN, DHTYPE);
+DHT dhtSensors[] = {dht1};
+#define DHTSIZE 1
+
+
+GA1A12S202 lux1(A5);
+GA1A12S202 luxSensors[] = {lux1};
+#define LUXSIZE 1
+
+float rawRange = 1024; // 3.3v
+float logRange = 5.0; // 3.3v = 10^5 lux
 
 
 // setup() runs once, when the device is first turned on.
 void setup() {
 	Serial.begin(9600); 
-	Serial.println("DHTxx test!");
+	Serial.println("Sensor reading test!");
 
-	dht.begin();
-
+	dht1.begin();
 }
 
 // loop() runs over and over again, as quickly as it can execute.
 void loop() {
-  // The core of your code will likely live here.
 
-
-// Reading temperature or humidity takes about 250 milliseconds!
-// Sensor readings may also be up to 2 seconds 'old' (its a 
-// very slow sensor)
-	float h = dht.getHumidity();
-// Read temperature as Celsius
-	float t = dht.getTempCelcius();
+	tempRead();
+	lightRead();
   
-// Check if any reads failed and exit early (to try again).
-	if (isnan(h) || isnan(t)) {
-		Serial.println("Failed to read from DHT sensor!");
-		return;
-	}
 
-  Serial.print("Humedad: ");
-	Serial.println(h); 
-  Serial.print("Temperatura: ");
-	Serial.println(t); 
-
-
-	//Particle.publish("temperature", String(h)); // publish to cloud YA FUNCIONA!!!
-  delay(5000);
+	delay(5000);
 
 }
+
+void tempRead(){
+
+	float h = 0;
+	float t = 0;
+	float sumH = 0;
+	float sumT = 0;
+	float averageH = 0;
+	float averageT = 0;
+
+
+	for (int i = 0 ; i < DHTSIZE ; i++){
+
+		h = dhtSensors[i].getHumidity();
+		t = dhtSensors[i].getTempCelcius();
+
+		Serial.print("Sensor DHT: ");
+		Serial.println(i);
+		Serial.print("Humedad: ");
+		Serial.println(h); 
+		Serial.print("Temperatura: ");
+		Serial.println(t); 
+
+		sumH = sumH + h;
+		sumT = sumT + t;
+	}
+
+	averageT = sumT/DHTSIZE;
+	Serial.print("Promedio temperatura: ");
+	Serial.println(averageT);
+
+	averageH = sumH/DHTSIZE;
+	Serial.print("Promedio temperatura: ");
+	Serial.println(averageH);
+
+	//Send averages to the cloud
+}
+
+void lightRead(){
+
+	float l = 0;
+	float sumL = 0;
+	float averageL = 0;
+
+	for (int i = 0 ; i < LUXSIZE ; i++){
+		l = luxSensors[i].getLux(true);
+
+		Serial.print("Sensor LUX: ");
+		Serial.println(i);
+		Serial.print("Luz: ");
+		Serial.println(l); 
+
+		sumL = sumL + l;
+	}
+
+	averageL = sumL/LUXSIZE;
+	Serial.print("Promedio temperatura: ");
+	Serial.println(averageL);
+}
+
+
+
+//Particle.publish("temperature", String(h)); // publish to cloud YA FUNCIONA!!!
