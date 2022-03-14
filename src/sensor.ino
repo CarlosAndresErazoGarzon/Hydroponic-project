@@ -71,51 +71,30 @@ void loop()
 
 	bool bufferSent = false;
 
-	Serial.print("HYGRO1: ");
-	//Serial.print(analogRead(HYGROA1));
-	ubidots.add("T-HYGRO1", analogRead(HYGROA1));
-	Serial.print(" ");
-	Serial.println(digitalRead(HYGROD5));
-	Serial.print("HYGRO2: ");
-	//Serial.print(analogRead(HYGROA2));
-	ubidots.add("T-HYGRO2", analogRead(HYGROA2));
-	Serial.print(" ");
-	Serial.println(digitalRead(HYGROD4));
+	for(int i = 0; i<2; i++){
+		ubidots.add("T-HYGRO1", analogRead(HYGROA1));
+		ubidots.add("T-HYGRO2", analogRead(HYGROA2));
+		ubidots.add("T-HUM1", dht1.getHumidity());
+		ubidots.add("T-TEMP1", dht1.getTempCelcius());
+		ubidots.add("T-HUM2", dht2.getHumidity());
+		ubidots.add("T-TEMP2", dht2.getTempCelcius());
+		ubidots.add("T-LUX1", lux1.getLux(true));
+		ubidots.add("T-LUX2", lux2.getLux(true));
+		ubidots.add("T-LUX3", lux3.getLux(true));
 
-	Serial.print("DHT1: ");
-	//Serial.print(dht1.getHumidity());
-	ubidots.add("T-HUM1", dht1.getHumidity());
-	Serial.print(" ");
-	//Serial.println(dht1.getTempCelcius());
-	ubidots.add("T-TEMP1", dht1.getTempCelcius());
+		bufferSent = ubidots.send(); // Will send data to a device label that matches the device Id
 
-	Serial.print("DHT2: ");
-	//Serial.print(dht2.getHumidity());
-	ubidots.add("T-HUM2", dht2.getHumidity());
-	Serial.print(" ");
-	//Serial.println(dht2.getTempCelcius());
-	ubidots.add("T-TEMP2", dht2.getTempCelcius());
+		if (bufferSent)
+		{
+			// Do something if values were sent properly
+			Serial.println("Values sent by the device");
+		}
 
-	Serial.print("LUX1: ");
-	//Serial.println(lux1.getLux(true));
-	ubidots.add("T-LUX1", lux1.getLux(true));
-	Serial.print("LUX2: ");
-	//Serial.println(lux2.getLux(true));
-	ubidots.add("T-LUX2", lux2.getLux(true));
-	Serial.print("LUX3: ");
-	//Serial.println(lux3.getLux(true));
-	ubidots.add("T-LUX3", lux3.getLux(true));
-	
-
-	bufferSent = ubidots.send(); // Will send data to a device label that matches the device Id
-
-	if (bufferSent)
-	{
-		// Do something if values were sent properly
-		Serial.println("Values sent by the device");
+		delay(2000);
 	}
 
-	delay(900000);
+	//delay(900000);
+	System.sleep(900);
 
 }
 
