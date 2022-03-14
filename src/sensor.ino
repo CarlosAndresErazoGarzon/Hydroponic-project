@@ -10,64 +10,74 @@
 #include "Ubidots.h"
 
 #ifndef UBIDOTS_TOKEN
-#define UBIDOTS_TOKEN ""  // Put here your Ubidots TOKEN
+#define UBIDOTS_TOKEN "" // Put here your Ubidots TOKEN
 #endif
 
 Ubidots ubidots(UBIDOTS_TOKEN, UBI_UDP);
 
-
-#define DHTPIN 8
+#define DHT11PIN 8
+#define DHT12PIN 7
+#define DHT21PIN 6
 #define DHTYPE DHT11
 
+DHT dht11(DHT11PIN, DHTYPE);
+DHT dht12(DHT12PIN, DHTYPE);
+DHT dht21(DHT21PIN, DHTYPE);
+DHT dht1Sensors[] = {dht11, dht12};
+DHT dht2Sensors[] = {dht21};
 
-DHT dht1(DHTPIN, DHTYPE);
-DHT dhtSensors[] = {dht1};
-#define DHTSIZE 1
-
+#define DHT1SIZE 2
+#define DHT2SIZE 1
 
 GA1A12S202 lux1(A5);
 GA1A12S202 luxSensors[] = {lux1};
 #define LUXSIZE 1
 
-
 // setup() runs once, when the device is first turned on.
-void setup() {
-	Serial.begin(9600); 
+void setup()
+{
+	Serial.begin(9600);
 	Serial.println("Sensor reading test!");
 
-	dht1.begin();
+	dht11.begin();
+	dht12.begin();
+	dht21.begin();
 	ubidots.setDebug(true);
 }
 
 // loop() runs over and over again, as quickly as it can execute.
-void loop() {
+void loop()
+{
 
 	bool bufferSent = false;
 
 	delay(9000);
 
-	tempRead();
+	tempRead(1);
+	tempRead(2);
 	lightRead();
 
 	delay(9000);
 
-	tempRead();
+	tempRead(1);
+	tempRead(2);
 	lightRead();
 
+	bufferSent = ubidots.send(); // Will send data to a device label that matches the device Id
 
-	bufferSent = ubidots.send();  // Will send data to a device label that matches the device Id
-
-	if (bufferSent) {
-	// Do something if values were sent properly
-	Serial.println("Values sent by the device");
+	if (bufferSent)
+	{
+		// Do something if values were sent properly
+		Serial.println("Values sent by the device");
 	}
 
-	
-	System.sleep(900);
+	delay(120000);
 
+	//System.sleep(900);
 }
 
-void tempRead(){
+void tempRead(int group)
+{
 
 	float h = 0;
 	float t = 0;
@@ -76,62 +86,98 @@ void tempRead(){
 	float averageH = 0;
 	float averageT = 0;
 
+	int DHTSIZE = 0;
 
-	for (int i = 0 ; i < DHTSIZE ; i++){
+	if (group == 1)
+	{
+		Serial.println("PRIMER GRUPO");
+		DHTSIZE = DHT1SIZE;
 
-		h = dhtSensors[i].getHumidity();
-		t = dhtSensors[i].getTempCelcius();
+		for (int i = 0; i < DHTSIZE; i++)
+		{
 
-		Serial.print("Sensor DHT: ");
-		Serial.println(i);
-		Serial.print("Humedad: ");
-		Serial.println(h); 
-		Serial.print("Temperatura: ");
-		Serial.println(t); 
+			h = dht1Sensors[i].getHumidity();
+			t = dht1Sensors[i].getTempCelcius();
 
-		sumH = sumH + h;
-		sumT = sumT + t;
+			Serial.print("Sensor DHT: ");
+			Serial.println(i);
+			Serial.print("Humedad: ");
+			Serial.println(h);
+			Serial.print("Temperatura: ");
+			Serial.println(t);
+
+			sumH = sumH + h;
+			sumT = sumT + t;
+		}
+	}
+	else
+	{
+		Serial.println("SEGUNDO GRUPO");
+		DHTSIZE = DHT2SIZE;
+
+		for (int i = 0; i < DHTSIZE; i++)
+		{
+
+			h = dht2Sensors[i].getHumidity();
+			t = dht2Sensors[i].getTempCelcius();
+
+			Serial.print("Sensor DHT: ");
+			Serial.println(i);
+			Serial.print("Humedad: ");
+			Serial.println(h);
+			Serial.print("Temperatura: ");
+			Serial.println(t);
+
+			sumH = sumH + h;
+			sumT = sumT + t;
+		}
 	}
 
-	averageT = sumT/DHTSIZE;
+	averageT = sumT / DHTSIZE;
 	Serial.print("Promedio temperatura: ");
 	Serial.println(averageT);
 
-	averageH = sumH/DHTSIZE;
+	averageH = sumH / DHTSIZE;
 	Serial.print("Promedio humedad: ");
 	Serial.println(averageH);
 
-
-	ubidots.add("hum1", averageH);
-	ubidots.add("temp1", averageT);
-
+	if (group == 1)
+	{
+		ubidots.add("hum1", averageH);
+		ubidots.add("temp1", averageT);
+	}
+	else
+	{
+		ubidots.add("hum2", averageH);
+		ubidots.add("temp2", averageT);
+	}
 }
 
-void lightRead(){
+void lightRead()
+{
 
 	float l = 0;
 	float sumL = 0;
 	float averageL = 0;
 	bool bufferSent = false;
 
-	for (int i = 0 ; i < LUXSIZE ; i++){
+	for (int i = 0; i < LUXSIZE; i++)
+	{
 		l = luxSensors[i].getLux(true);
 
 		Serial.print("Sensor LUX: ");
 		Serial.println(i);
 		Serial.print("Luz: ");
-		Serial.println(l); 
+		Serial.println(l);
 
 		sumL = sumL + l;
 	}
 
-	averageL = sumL/LUXSIZE;
+	averageL = sumL / LUXSIZE;
 	Serial.print("Promedio temperatura: ");
 	Serial.println(averageL);
 
 	ubidots.add("Lux1", averageL);
 }
 
-
-
-//Particle.publish("temperature", String(h)); // publish to cloud YA FUNCIONA!!!
+// Particle.publish("temperature", String(h)); // publish to cloud YA FUNCIONA!!!
