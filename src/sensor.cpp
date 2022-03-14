@@ -26,23 +26,38 @@ void lightRead();
 
 Ubidots ubidots(UBIDOTS_TOKEN, UBI_UDP);
 
-#define DHT11PIN 8
-#define DHT12PIN 7
-#define DHT21PIN 6
-#define DHTYPE DHT11
+//TEMPERATURE
 
-DHT dht11(DHT11PIN, DHTYPE);
-DHT dht12(DHT12PIN, DHTYPE);
-DHT dht21(DHT21PIN, DHTYPE);
-DHT dht1Sensors[] = {dht11, dht12};
-DHT dht2Sensors[] = {dht21};
+#define DHT8PIN 8
+#define DHT7PIN 7
+//#define DHT21PIN 6
+#define DHTYPE11 DHT11
+#define DHTYPE22 DHT22
+
+DHT dht1(DHT8PIN, DHTYPE11);
+DHT dht2(DHT7PIN, DHTYPE22);
+//DHT dht12(DHT12PIN, DHTYPE);
+//DHT dht21(DHT21PIN, DHTYPE);
+//DHT dht1Sensors[] = {dht11, dht12};
+//DHT dht2Sensors[] = {dht21};
 
 #define DHT1SIZE 2
 #define DHT2SIZE 1
 
+//HYGROMETER
+
+#define HYGROD5 D5
+#define HYGROA1 A1
+#define HYGROD4 D4
+#define HYGROA2 A2
+
+//LUX
+
 GA1A12S202 lux1(A5);
 GA1A12S202 luxSensors[] = {lux1};
 #define LUXSIZE 1
+
+
 
 // setup() runs once, when the device is first turned on.
 void setup()
@@ -50,10 +65,14 @@ void setup()
 	Serial.begin(9600);
 	Serial.println("Sensor reading test!");
 
-	dht11.begin();
-	dht12.begin();
-	dht21.begin();
-	// ubidots.setDebug(true);
+	dht1.begin();
+	dht2.begin();
+
+	pinMode(HYGROD5, INPUT_PULLDOWN);
+	pinMode(HYGROD4, INPUT_PULLDOWN);
+	
+
+	//ubidots.setDebug(true);
 }
 
 // loop() runs over and over again, as quickly as it can execute.
@@ -62,19 +81,39 @@ void loop()
 
 	bool bufferSent = false;
 
-	delay(9000);
+	delay(900);
 
-	tempRead(1);
-	tempRead(2);
-	lightRead();
+	//tempRead(1);
+	//tempRead(2);
+	//lightRead();
 
-	delay(9000);
+	Serial.print("HYGRO1: ");
+	Serial.print(analogRead(HYGROA1));
+	Serial.print(" ");
+	Serial.println(digitalRead(HYGROD5));
+	Serial.print("HYGRO2: ");
+	Serial.print(analogRead(HYGROA2));
+	Serial.print(" ");
+	Serial.println(digitalRead(HYGROD4));
 
-	tempRead(1);
-	tempRead(2);
-	lightRead();
+	Serial.print("DHT1: ");
+	Serial.print(dht1.getHumidity());
+	Serial.print(" ");
+	Serial.print(dht1.getTempCelcius());
 
-	bufferSent = ubidots.send(); // Will send data to a device label that matches the device Id
+	Serial.print("DHT2: ");
+	Serial.print(dht2.getHumidity());
+	Serial.print(" ");
+	Serial.print(dht2.getTempCelcius());
+	
+
+	//delay(9000);
+
+	//tempRead(1);
+	//tempRead(2);
+	//lightRead();
+
+	//bufferSent = ubidots.send(); // Will send data to a device label that matches the device Id
 
 	if (bufferSent)
 	{
@@ -82,7 +121,7 @@ void loop()
 		Serial.println("Values sent by the device");
 	}
 
-	delay(120000);
+	//delay(120000);
 
 	//System.sleep(900);
 }
