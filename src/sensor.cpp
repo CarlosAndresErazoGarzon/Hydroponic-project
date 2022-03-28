@@ -14,17 +14,15 @@
 #include "Adafruit_DHT.h"
 #include "GA1A12S202.h"
 #include "Ubidots.h"
+#include "SdFat.h"
 
+void saveData(String text);
 void setup();
 void loop();
-#line 12 "c:/Users/anes_/Documents/Hidroponicos/Hydroponic-project/src/sensor.ino"
-#ifndef UBIDOTS_TOKEN
-#define UBIDOTS_TOKEN "" // Put here your Ubidots TOKEN
-#endif
+#line 13 "c:/Users/anes_/Documents/Hidroponicos/Hydroponic-project/src/sensor.ino"
+SYSTEM_MODE(MANUAL);
 
-Ubidots ubidots(UBIDOTS_TOKEN, UBI_UDP);
-
-//TEMPERATURE
+// TEMPERATURE
 
 #define DHT8PIN 8
 #define DHT7PIN 7
@@ -34,31 +32,64 @@ Ubidots ubidots(UBIDOTS_TOKEN, UBI_UDP);
 
 DHT dht1(DHT8PIN, DHTYPE11);
 DHT dht2(DHT7PIN, DHTYPE22);
-//DHT dht12(DHT12PIN, DHTYPE);
-//DHT dht21(DHT21PIN, DHTYPE);
-//DHT dht1Sensors[] = {dht11, dht12};
-//DHT dht2Sensors[] = {dht21};
 
 #define DHT1SIZE 2
 #define DHT2SIZE 1
 
-//HYGROMETER
+float dht1Temp = 0;
+float dht1Hum = 0;
+
+float dht2Temp = 0;
+float dht2Hum = 0;
+
+// HYGROMETER
 
 #define HYGROD5 D5
 #define HYGROA1 A1
 #define HYGROD4 D4
 #define HYGROA2 A2
 
-//LUX
+int hygro1Hum = 0;
+int hygro2hum = 0;
 
-GA1A12S202 lux1(A5);
+// LUX
+
 GA1A12S202 lux2(A4);
 GA1A12S202 lux3(A3);
 
+float lux1lux = 0;
+float lux2lux = 0;
 
+// Primary SPI with DMA
+// SCK => D13, MISO => D12, MOSI => D11, SS => D14/A5 (default)
+SdFat sd;
+const uint8_t chipSelect = SS;
 
+File myFile;
 
-// setup() runs once, when the device is first turned on.
+void saveData(String text)
+{
+	delay(5000);
+
+	if (!sd.begin(chipSelect, SPI_FULL_SPEED))
+	{
+		sd.initErrorHalt();
+	}
+
+	if (!myFile.open("data.csv", O_RDWR | O_CREAT | O_AT_END))
+	{
+		sd.errorHalt("opening test.txt for write failed");
+	}
+
+	Serial.print("Writing to data.csv");
+	Serial.print("\n");
+	Serial.print(text);
+	myFile.println(text);
+
+	myFile.close();
+	Serial.println("done.");
+}
+
 void setup()
 {
 	Serial.begin(9600);
@@ -69,63 +100,68 @@ void setup()
 
 	pinMode(HYGROD5, INPUT_PULLDOWN);
 	pinMode(HYGROD4, INPUT_PULLDOWN);
-	
-
-	//ubidots.setDebug(true);
 }
 
-// loop() runs over and over again, as quickly as it can execute.
 void loop()
 {
 
-	bool bufferSent = false;
+	bool cent = true;
+	int contCent = 0;
 
-	Serial.print("HYGRO1: ");
-	//Serial.print(analogRead(HYGROA1));
-	ubidots.add("T-HYGRO1", analogRead(HYGROA1));
-	Serial.print(" ");
-	Serial.println(digitalRead(HYGROD5));
-	Serial.print("HYGRO2: ");
-	//Serial.print(analogRead(HYGROA2));
-	ubidots.add("T-HYGRO2", analogRead(HYGROA2));
-	Serial.print(" ");
-	Serial.println(digitalRead(HYGROD4));
+	hygro1Hum = 0;
+	hygro2hum = 0;
+	dht1Hum = 0;
+	dht1Temp = 0;
+	dht2Hum = 0;
+	dht2Temp = 0;
+	lux1lux = 0;
+	lux2lux = 0;
 
-	Serial.print("DHT1: ");
-	//Serial.print(dht1.getHumidity());
-	ubidots.add("T-HUM1", dht1.getHumidity());
-	Serial.print(" ");
-	//Serial.println(dht1.getTempCelcius());
-	ubidots.add("T-TEMP1", dht1.getTempCelcius());
+	// This number will overflow (go back to zero), after approximately 49 days
+	unsigned long time = millis();
 
-	Serial.print("DHT2: ");
-	//Serial.print(dht2.getHumidity());
-	ubidots.add("T-HUM2", dht2.getHumidity());
-	Serial.print(" ");
-	//Serial.println(dht2.getTempCelcius());
-	ubidots.add("T-TEMP2", dht2.getTempCelcius());
+	hygro1Hum = analogRead(HYGROA1);
+	hygro2hum = analogRead(HYGROA2);
 
-	Serial.print("LUX1: ");
-	//Serial.println(lux1.getLux(true));
-	ubidots.add("T-LUX1", lux1.getLux(true));
-	Serial.print("LUX2: ");
-	//Serial.println(lux2.getLux(true));
-	ubidots.add("T-LUX2", lux2.getLux(true));
-	Serial.print("LUX3: ");
-	//Serial.println(lux3.getLux(true));
-	ubidots.add("T-LUX3", lux3.getLux(true));
-	
-
-	bufferSent = ubidots.send(); // Will send data to a device label that matches the device Id
-
-	if (bufferSent)
+	//Rectify that the data is read
+	while (cent)
 	{
-		// Do something if values were sent properly
-		Serial.println("Values sent by the device");
+		if (dht1Hum != 0 && dht1Temp != 0)
+		{
+			break;
+		}
+		else if (dht1Hum == 0)
+		{
+			delay(500);
+			dht1Hum = dht1.getHumidity();
+		}
+		else if (dht1Temp == 0)
+		{
+			delay(500);
+			dht1Temp = dht1.getTempCelcius();
+		}
+		contCent++;
+		if (contCent == 5)
+		{
+			cent = false;
+		}
 	}
 
-	delay(900000);
+	dht2Hum = dht2.getHumidity();
+	dht2Temp = dht2.getTempCelcius();
+	lux1lux = lux2.getLux(true);
+	lux2lux = lux3.getLux(true);
 
+	//BOARDTIME HYGRO1 HYGRO2 HUM1 TEMP1 HUM2 TEMP2 LUX1 LUX2
+	String text = String(time) + "," +
+				  String(hygro1Hum) + "," + String(hygro2hum) + "," +
+				  String(dht1Hum) + "," + String(dht1Temp) + "," +
+				  String(dht2Hum) + "," + String(dht2Temp) + "," +
+				  String(lux1lux) + "," + String(lux2lux);
+
+	//Save the data on the SD card
+	saveData(text);
+
+	delay(900);
+	//delay(900000);
 }
-
-// Particle.publish("temperature", String(h)); // publish to cloud YA FUNCIONA!!!
